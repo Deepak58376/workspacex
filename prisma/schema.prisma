@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+ 
+datasource db {
+  provider = "postgresql"
+}
+ 
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  emailVerified  DateTime?
+  hashedPassword String?
+  name           String?
+  image          String?
+  avatarUrl      String?
+  role           Role            @default(MEMBER)
+  createdAt      DateTime        @default(now())
+  calendarEvents CalendarEvent[]
+  accounts       Account[]
+  sessions       Session[]
+}
+ 
+enum Role {
+  ADMIN
+  EDITOR
+  MEMBER
+}
+ 
+model Platform {
+  id             String          @id @default(cuid())
+  name           String
+  logoUrl        String?
+  createdAt      DateTime        @default(now())
+  calendarEvents CalendarEvent[]
+}
+ 
+model CalendarEvent {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  date         DateTime
+  projectTitle String        @default("Workspace")
+  status       ContentStatus @default(IDEA)
+  platformId   String?
+  platform     Platform?     @relation(fields: [platformId], references: [id])
+  assignedId   String?
+  assignedTo   User?         @relation(fields: [assignedId], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  name         String
+  size         String
+  date         String   // YYYY-MM-DD
+  url          String?  // base64 data string
+  projectTitle String   @default("Workspace")
+  createdAt    DateTime @default(now())
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  title     String   @unique
+  createdAt DateTime @default(now())
+}
+ 
+enum ContentStatus {
+  IDEA
+  PLANNED
+  WRITING
+  REVIEW
+  SCHEDULED
+  PUBLISHED
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
