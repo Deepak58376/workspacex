@@ -122,22 +122,6 @@ export default function Navbar() {
             <span className="nav-operator-text" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.02em' }}>
               Operator: <strong style={{ color: '#ffffff' }}>{session.user.name || session.user.email}</strong>
             </span>
-            <Link
-              href="/dashboard"
-              className="nav-btn"
-              style={{
-                fontSize: '0.82rem',
-                color: '#ffffff',
-                textDecoration: 'none',
-                border: '1px solid rgba(255,255,255,0.2)',
-                padding: '0.4rem 1rem',
-                borderRadius: '3px',
-                fontWeight: 500,
-                letterSpacing: '0.05em',
-              }}
-            >
-              DASHBOARD
-            </Link>
             <button
               onClick={handleLogout}
               className="nav-btn"
