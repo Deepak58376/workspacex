@@ -35,10 +35,13 @@ export default function Navbar() {
   }
 
   const handleLogout = async () => {
-    await logoutUser()
-    setSession(null)
-    setShowLogoutModal(false)
-    router.refresh()
+    try {
+      setSession(null)
+      setShowLogoutModal(false)
+      await logoutUser()
+    } finally {
+      router.refresh()
+    }
   }
 
   return (

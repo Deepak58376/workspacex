@@ -384,11 +384,14 @@ function DashboardContent() {
   }, [])
 
   const handleLogout = async () => {
-    await logoutUser()
-    setUser(null)
-    setShowLogoutModal(false)
-    router.push('/')
-    router.refresh()
+    try {
+      setUser(null)
+      setShowLogoutModal(false)
+      await logoutUser()
+    } finally {
+      router.push('/')
+      router.refresh()
+    }
   }
 
   const handleAddEvent = async (e: React.FormEvent) => {
