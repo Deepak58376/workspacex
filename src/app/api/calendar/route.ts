@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { enforceRoutePayloadLimit } from '@/lib/validation'
+import { auth } from '@/auth'
 
 export interface CalendarEvent {
   id: string
@@ -17,11 +18,16 @@ export interface CalendarEvent {
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
     const projectTitle: string = searchParams.get('projectTitle') || 'Workspace'
 
     const events = (await db.calendarEvent.findMany({
-      where: { projectTitle },
+      where: { projectTitle, assignedId: session.user.id },
       orderBy: { date: 'asc' }
     })) as CalendarEvent[]
 
@@ -47,6 +53,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = (await req.json()) as { title?: string; date?: string; projectTitle?: string }
     const { title, date, projectTitle } = body
 
@@ -58,7 +69,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       data: {
         title,
         date: new Date(date),
-        projectTitle: projectTitle || 'Workspace'
+        projectTitle: projectTitle || 'Workspace',
+        assignedId: session.user.id
       }
     })) as CalendarEvent
 
@@ -76,6 +88,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
     const id: string | null = searchParams.get('id')
 
@@ -83,9 +100,13 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Missing event ID' }, { status: 400 })
     }
 
-    await db.calendarEvent.delete({
-      where: { id }
+    const result = await db.calendarEvent.deleteMany({
+      where: { id, assignedId: session.user.id }
     })
+
+    if (result.count === 0) {
+      return NextResponse.json({ error: 'Event not found or unauthorized' }, { status: 404 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: unknown) {
