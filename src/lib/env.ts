@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+// Fallback AUTH_SECRET to NEXTAUTH_SECRET if only the latter is set
+if (!process.env.AUTH_SECRET && process.env.NEXTAUTH_SECRET) {
+  process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET
+}
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   AUTH_SECRET: z.string().min(1, 'AUTH_SECRET is required'),
