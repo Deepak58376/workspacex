@@ -41,6 +41,7 @@ export default function ProjectsSection() {
   
   const [session, setSession] = useState<{ user?: { name?: string | null; email?: string | null } } | null>(null)
   const [loadingSession, setLoadingSession] = useState(true)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   // Load session and projects from database APIs on mount
   useEffect(() => {
@@ -157,6 +158,13 @@ export default function ProjectsSection() {
     )
   }
 
+  const handleLogout = async () => {
+    await logoutUser()
+    setSession(null)
+    setShowLogoutModal(false)
+    router.refresh()
+  }
+
   return (
     <section
       id="projects"
@@ -230,10 +238,7 @@ export default function ProjectsSection() {
                 Signed in as <strong style={{ color: '#ffffff' }}>{session.user.name || session.user.email}</strong>
               </span>
               <button
-                onClick={async () => {
-                  await logoutUser()
-                  router.refresh()
-                }}
+                onClick={() => setShowLogoutModal(true)}
                 style={{
                   background: 'transparent',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -599,6 +604,88 @@ export default function ProjectsSection() {
           </div>
         )}
       </div>
+
+      {/* Logout Confirmation Modal Overlay */}
+      {showLogoutModal && (
+        <div
+          onClick={() => setShowLogoutModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '90%',
+              maxWidth: '380px',
+              background: '#0c0c0c',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              padding: '2rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem',
+              boxShadow: '0 0 35px rgba(255, 255, 255, 0.08)',
+              textAlign: 'center',
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 400, letterSpacing: '0.05em', color: '#ffffff' }}>
+              LOG OUT
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
+              Do you want to log out?
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '3px',
+                  color: 'rgba(255,255,255,0.7)',
+                  padding: '0.5rem 1.5rem',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  letterSpacing: '0.05em',
+                  transition: 'all 0.2s',
+                }}
+                className="logout-cancel-btn"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #ffffff',
+                  borderRadius: '3px',
+                  color: '#000000',
+                  padding: '0.5rem 1.5rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  letterSpacing: '0.05em',
+                  transition: 'all 0.2s',
+                }}
+                className="logout-confirm-btn"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -666,6 +753,15 @@ const styleTag = (
       border-color: rgba(255, 255, 255, 0.6) !important;
       color: #ffffff !important;
       background: rgba(255, 255, 255, 0.05) !important;
+    }
+    .logout-cancel-btn:hover {
+      border-color: rgba(255,255,255,0.6) !important;
+      color: #ffffff !important;
+      background: rgba(255,255,255,0.05) !important;
+    }
+    .logout-confirm-btn:hover {
+      background: rgba(255,255,255,0.85) !important;
+      border-color: rgba(255,255,255,0.85) !important;
     }
     
     .btn-login-cta:hover {
