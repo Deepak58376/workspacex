@@ -45,10 +45,11 @@ model CalendarEvent {
   status       ContentStatus @default(IDEA)
   platformId   String?
   platform     Platform?     @relation(fields: [platformId], references: [id])
-  assignedId   String?
-  assignedTo   User?         @relation(fields: [assignedId], references: [id])
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  assignedId    String?
+  assignedTo    User?         @relation(fields: [assignedId], references: [id])
+  googleEventId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
 
 model Document {

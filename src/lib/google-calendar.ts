@@ -71,19 +71,26 @@ export async function getValidGoogleToken(userId: string): Promise<string | null
 export async function createGoogleCalendarEvent(
   userId: string,
   event: { title: string; date: Date }
-): Promise<void> {
+): Promise<string | null> {
   const accessToken = await getValidGoogleToken(userId)
   if (!accessToken) {
     console.log(`Google Calendar not connected for user ${userId}. Skipping sync.`)
-    return
+    return null
   }
 
-  // Google calendar timed events (start at 9:00 AM UTC, end at 10:00 AM UTC)
+  // Calculate start time: match current hours/minutes on target date
   const start = new Date(event.date)
-  start.setUTCHours(9, 0, 0, 0)
+  const now = new Date()
+  start.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), 0, 0)
 
-  const end = new Date(event.date)
-  end.setUTCHours(10, 0, 0, 0)
+  // If start is today or in the past, push it 1 hour into the future to guarantee reminders fire
+  if (start.getTime() <= now.getTime() + 5 * 60 * 1000) {
+    const futureTime = new Date(now.getTime() + 60 * 60 * 1000)
+    start.setUTCFullYear(futureTime.getUTCFullYear(), futureTime.getUTCMonth(), futureTime.getUTCDate())
+    start.setUTCHours(futureTime.getUTCHours(), futureTime.getUTCMinutes(), 0, 0)
+  }
+
+  const end = new Date(start.getTime() + 60 * 60 * 1000)
 
   const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
     method: 'POST',
@@ -115,5 +122,36 @@ export async function createGoogleCalendarEvent(
     throw new Error(`Google Calendar API event creation failed: ${errorMsg}`)
   }
 
-  console.log(`Successfully synced event "${event.title}" to Google Calendar for user ${userId}`)
+  const data = await res.json()
+  console.log(`Successfully synced event "${event.title}" to Google Calendar for user ${userId} (Google Event ID: ${data.id})`)
+  return data.id || null
+}
+
+export async function deleteGoogleCalendarEvent(
+  userId: string,
+  googleEventId: string
+): Promise<void> {
+  const accessToken = await getValidGoogleToken(userId)
+  if (!accessToken) {
+    return
+  }
+
+  console.log(`Deleting Google Calendar event ${googleEventId} for user ${userId}...`)
+  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${googleEventId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  })
+
+  if (!res.ok) {
+    const errorMsg = await res.text()
+    if (res.status === 404 || res.status === 410) {
+      console.warn(`Google Calendar event ${googleEventId} already deleted or not found on Google Calendar side.`)
+      return
+    }
+    throw new Error(`Google Calendar API event deletion failed: ${errorMsg}`)
+  }
+
+  console.log(`Successfully deleted event ${googleEventId} from Google Calendar for user ${userId}`)
 }

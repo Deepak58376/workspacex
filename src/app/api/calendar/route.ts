@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { enforceRoutePayloadLimit } from '@/lib/validation'
 import { auth } from '@/auth'
-import { createGoogleCalendarEvent } from '@/lib/google-calendar'
+import { createGoogleCalendarEvent, deleteGoogleCalendarEvent } from '@/lib/google-calendar'
 
 export interface CalendarEvent {
   id: string
@@ -66,24 +66,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Missing title or date' }, { status: 400 })
     }
 
+    // Sync with Google Calendar if connected (fails silently to prevent blocking)
+    let googleEventId: string | null = null
+    try {
+      googleEventId = await createGoogleCalendarEvent(session.user.id, {
+        title,
+        date: new Date(date)
+      })
+    } catch (gErr) {
+      console.error('Google Calendar Sync failed:', gErr)
+    }
+
     const event = (await db.calendarEvent.create({
       data: {
         title,
         date: new Date(date),
         projectTitle: projectTitle || 'Workspace',
-        assignedId: session.user.id
+        assignedId: session.user.id,
+        googleEventId
       }
     })) as CalendarEvent
-
-    // Sync with Google Calendar if connected (fails silently to prevent blocking)
-    try {
-      await createGoogleCalendarEvent(session.user.id, {
-        title: event.title,
-        date: event.date
-      })
-    } catch (gErr) {
-      console.error('Google Calendar Sync failed:', gErr)
-    }
 
     return NextResponse.json({
       id: event.id,
@@ -111,13 +113,28 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Missing event ID' }, { status: 400 })
     }
 
-    const result = await db.calendarEvent.deleteMany({
+    // Find the event first to get googleEventId
+    const event = await db.calendarEvent.findFirst({
       where: { id, assignedId: session.user.id }
     })
 
-    if (result.count === 0) {
+    if (!event) {
       return NextResponse.json({ error: 'Event not found or unauthorized' }, { status: 404 })
     }
+
+    // Delete from Google Calendar if connected and has googleEventId
+    if (event.googleEventId) {
+      try {
+        await deleteGoogleCalendarEvent(session.user.id, event.googleEventId)
+      } catch (gErr) {
+        console.error('Failed to delete event from Google Calendar:', gErr)
+      }
+    }
+
+    // Now delete locally
+    await db.calendarEvent.delete({
+      where: { id }
+    })
 
     return NextResponse.json({ success: true })
   } catch (error: unknown) {
