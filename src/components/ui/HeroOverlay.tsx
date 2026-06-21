@@ -145,6 +145,24 @@ export default function HeroOverlay({ onScrollDown }: { onScrollDown?: () => voi
           }
         }
 
+        @keyframes scroll-pulse {
+          0%, 60%, 100% {
+            opacity: 0.45;
+          }
+          75%, 85% {
+            opacity: 1;
+          }
+        }
+
+        .scroll-indicator {
+          animation: scroll-pulse 4s infinite ease-in-out;
+        }
+
+        .scroll-indicator:hover {
+          animation: none !important;
+          opacity: 1 !important;
+        }
+
         .scroll-indicator:hover .scroll-text {
           color: #ffffff !important;
         }
@@ -210,7 +228,7 @@ export default function HeroOverlay({ onScrollDown }: { onScrollDown?: () => voi
       >
         <span
           style={{
-            color: 'rgba(255,255,255,0.35)',
+            color: 'rgba(255,255,255,0.85)',
             fontSize: '0.7rem',
             letterSpacing: '0.25em',
             fontWeight: 400,
@@ -223,7 +241,7 @@ export default function HeroOverlay({ onScrollDown }: { onScrollDown?: () => voi
         </span>
         <ChevronDown
           size={20}
-          color="rgba(255,255,255,0.35)"
+          color="rgba(255,255,255,0.85)"
           className="scroll-arrow-icon"
         />
       </div>
