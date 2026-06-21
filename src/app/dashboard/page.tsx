@@ -94,6 +94,46 @@ function DashboardContent() {
   // Logout confirmation modal state
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
+  // Google connection state
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false)
+
+  // Check Google Calendar connection status
+  useEffect(() => {
+    if (user) {
+      const checkGoogleStatus = async () => {
+        try {
+          const res = await fetch('/api/auth/google-calendar/status')
+          if (res.ok) {
+            const data = await res.json()
+            setIsGoogleConnected(data.connected)
+          }
+        } catch (err) {
+          console.error('Failed to check Google connection status:', err)
+        }
+      }
+      checkGoogleStatus()
+    }
+  }, [user])
+
+  const handleGoogleConnect = () => {
+    window.location.href = `/api/auth/google-calendar/connect?projectTitle=${encodeURIComponent(projectTitle)}`
+  }
+
+  const handleGoogleDisconnect = async () => {
+    try {
+      const res = await fetch('/api/auth/google-calendar/status', { method: 'POST' })
+      if (res.ok) {
+        setIsGoogleConnected(false)
+        alert('Google Calendar disconnected successfully')
+      } else {
+        alert('Failed to disconnect Google Calendar')
+      }
+    } catch (err) {
+      console.error('Failed to disconnect Google Calendar:', err)
+      alert('An error occurred during disconnection')
+    }
+  }
+
   // Load session on mount
   useEffect(() => {
     const fetchSession = async () => {
@@ -736,6 +776,16 @@ function DashboardContent() {
           background: rgba(255, 255, 255, 0.85) !important;
           border-color: rgba(255, 255, 255, 0.85) !important;
         }
+        .btn-google-connect:hover {
+          border-color: rgba(255, 255, 255, 0.6) !important;
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: #ffffff !important;
+        }
+        .btn-google-disconnect:hover {
+          border-color: #ef4444 !important;
+          background: rgba(239, 68, 68, 0.1) !important;
+          color: #ef4444 !important;
+        }
         .close-modal-btn:hover {
           color: #ffffff !important;
           background: rgba(255, 255, 255, 0.08) !important;
@@ -953,6 +1003,61 @@ function DashboardContent() {
               <span>Calendar</span>
             </div>
           </nav>
+
+          <div style={{ marginTop: '2.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.5rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.35)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Integrations
+            </span>
+            {isGoogleConnected ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'rgba(74, 222, 128, 0.85)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80' }} />
+                  Google Calendar Active
+                </span>
+                <button
+                  onClick={handleGoogleDisconnect}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: 'rgba(239, 68, 68, 0.8)',
+                    borderRadius: '4px',
+                    padding: '0.4rem 0.75rem',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    marginTop: '0.5rem',
+                    transition: 'all 0.2s',
+                    width: '100%',
+                    textAlign: 'center',
+                    fontFamily: 'Inter, system-ui, sans-serif'
+                  }}
+                  className="btn-google-disconnect"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoogleConnect}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  borderRadius: '4px',
+                  padding: '0.5rem 0.75rem',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  marginTop: '0.75rem',
+                  transition: 'all 0.2s',
+                  width: '100%',
+                  textAlign: 'center',
+                  fontFamily: 'Inter, system-ui, sans-serif'
+                }}
+                className="btn-google-connect"
+              >
+                Connect Google Calendar
+              </button>
+            )}
+          </div>
         </div>
 
         <button onClick={() => router.push('/')} className="back-btn">

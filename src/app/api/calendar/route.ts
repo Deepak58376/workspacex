@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { enforceRoutePayloadLimit } from '@/lib/validation'
 import { auth } from '@/auth'
+import { createGoogleCalendarEvent } from '@/lib/google-calendar'
 
 export interface CalendarEvent {
   id: string
@@ -73,6 +74,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         assignedId: session.user.id
       }
     })) as CalendarEvent
+
+    // Sync with Google Calendar if connected (fails silently to prevent blocking)
+    try {
+      await createGoogleCalendarEvent(session.user.id, {
+        title: event.title,
+        date: event.date
+      })
+    } catch (gErr) {
+      console.error('Google Calendar Sync failed:', gErr)
+    }
 
     return NextResponse.json({
       id: event.id,
