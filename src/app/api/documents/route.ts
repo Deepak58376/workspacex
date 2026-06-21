@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    enforceRoutePayloadLimit(req, 5 * 1024 * 1024) // 5MB limit
+    enforceRoutePayloadLimit(req, 20 * 1024 * 1024) // 20MB limit
   } catch (err) {
     return NextResponse.json({ error: 'Payload size limit exceeded' }, { status: 413 })
   }

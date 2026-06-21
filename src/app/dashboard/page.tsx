@@ -181,9 +181,13 @@ function DashboardContent() {
         if (res.ok) {
           const savedDoc = await res.json()
           setUploadedDocs(prev => [savedDoc, ...prev])
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          alert(`Upload failed: ${errData.error || 'Server error occurred'}`)
         }
       } catch (err) {
         console.error('Failed to upload file:', err)
+        alert(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
       }
     }
 
