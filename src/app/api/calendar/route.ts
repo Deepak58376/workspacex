@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { enforceRoutePayloadLimit } from '@/lib/validation'
+import { CalendarEvent } from '@prisma/client'
 
 
 export async function GET(req: NextRequest) {
@@ -13,11 +14,12 @@ export async function GET(req: NextRequest) {
       orderBy: { date: 'asc' }
     })
 
-    const formattedEvents = events.map(e => ({
+    const formattedEvents = events.map((e: CalendarEvent) => ({
       id: e.id,
       title: e.title,
       date: e.date.toISOString().split('T')[0]
     }))
+
 
     return NextResponse.json(formattedEvents)
   } catch (error) {
