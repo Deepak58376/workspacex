@@ -201,6 +201,13 @@ function DashboardContent() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
+
+      // Enforce 3MB file size limit client-side due to Vercel's serverless payload limit
+      if (file.size > 3 * 1024 * 1024) {
+        alert(`Upload failed: "${file.name}" exceeds the maximum upload limit of 3MB. Please compress or select a smaller file.`)
+        continue
+      }
+
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1)
       const sizeStr = `${sizeMB} MB`
 
@@ -222,8 +229,23 @@ function DashboardContent() {
           const savedDoc = await res.json()
           setUploadedDocs(prev => [savedDoc, ...prev])
         } else {
-          const errData = await res.json().catch(() => ({}))
-          alert(`Upload failed: ${errData.error || 'Server error occurred'}`)
+          let errorMessage = 'Server error occurred'
+          if (res.status === 413) {
+            errorMessage = 'File size is too large for the server to process. Please select a file smaller than 3MB.'
+          } else {
+            try {
+              const errData = await res.json()
+              if (errData && errData.error) {
+                errorMessage = errData.error
+              }
+            } catch (jsonErr) {
+              // Non-JSON response (e.g. gateway HTML error page)
+              if (res.status === 504) {
+                errorMessage = 'Server timed out. Please try again.'
+              }
+            }
+          }
+          alert(`Upload failed: ${errorMessage}`)
         }
       } catch (err) {
         console.error('Failed to upload file:', err)
@@ -1640,7 +1662,7 @@ function DashboardContent() {
                   Upload from Device
                 </p>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
-                  Select PDF, XLSX, DOCX or images
+                  Select PDF, XLSX, DOCX or images (Max 3MB)
                 </p>
               </div>
               <input

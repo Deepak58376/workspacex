@@ -23,9 +23,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    enforceRoutePayloadLimit(req, 20 * 1024 * 1024) // 20MB limit
+    enforceRoutePayloadLimit(req, 4.5 * 1024 * 1024) // 4.5MB limit (Vercel request body limit)
   } catch (err) {
-    return NextResponse.json({ error: 'Payload size limit exceeded' }, { status: 413 })
+    return NextResponse.json({ error: 'Payload size limit exceeded (Max 4.5MB request body)' }, { status: 413 })
   }
 
   try {
